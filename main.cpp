@@ -200,8 +200,8 @@ int main(int argc, char const *argv[])
   Materials[3].Scatter = 0.9f;
   Materials[4].RefColor = V3(0.2,0.8,0.2);
   Materials[4].Scatter = 0.5f;
-  Materials[5].RefColor = V3(0.4,0.3,0.4);
-  Materials[5].Scatter = 0.9;
+  Materials[5].RefColor = V3(0.4,0.5,0.8);
+  Materials[5].Scatter = 0.99;
 
   // We have only one plane
   plane Plane = {};
@@ -264,7 +264,7 @@ int main(int argc, char const *argv[])
   v3 FilmCenter = CameraP - (FilmDist * CameraZ);
 
   // How many rays per pixel? 
-  uint32_t RaysPerPixels = 32; 
+  uint32_t RaysPerPixels = 1; 
   float Contrib = 1.0f / (float)RaysPerPixels;
 
   // Image generation loop
