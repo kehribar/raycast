@@ -264,7 +264,7 @@ int main(int argc, char const *argv[])
   v3 FilmCenter = CameraP - (FilmDist * CameraZ);
 
   // How many rays per pixel? 
-  uint32_t RaysPerPixels = 1; 
+  uint32_t RaysPerPixels = 128; 
   float Contrib = 1.0f / (float)RaysPerPixels;
 
   // Image generation loop
