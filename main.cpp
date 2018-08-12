@@ -1,16 +1,16 @@
 // ----------------------------------------------------------------------------
-// 
+//
 // Simple (?) raycaster written by watching 'Handmade Hero' Raycaster series
 // and manually copying the code pieces from video by hand. Not an exact copy
 // but the core algorithm is based on the video version.
-// 
+//
 // More of an 'active learning' example.
-// 
+//
 // Improvements (?)
 // ----------------
 // * 'RayIntersectBox' method added to original core code. It is probably
 // not the most efficient way but it _seems_ like working.
-// 
+//
 // ----------------------------------------------------------------------------
 // Original source is: https://hero.handmade.network/episode/ray/
 // ----------------------------------------------------------------------------
@@ -75,11 +75,11 @@ float RayIntersectSphere(
   float Denom = 2.0f * a;
   float Tolerance = 0.000001f;
   float RootTerm = sqrtf((b * b) - (4.0f * a * c));
-   
+
   if(RootTerm > Tolerance)
   {
-    float tp = (-b + RootTerm) / Denom; 
-    float tn = (-b - RootTerm) / Denom; 
+    float tp = (-b + RootTerm) / Denom;
+    float tn = (-b - RootTerm) / Denom;
 
     Result = tp;
     if((tn > 0) && (tn < tp))
@@ -93,7 +93,7 @@ float RayIntersectSphere(
 
 // ----------------------------------------------------------------------------
 float RayIntersectBox(
-  v3 RayOrigin, v3 RayDirection, box* Box, v3* HitNormal 
+  v3 RayOrigin, v3 RayDirection, box* Box, v3* HitNormal
 )
 {
   float Result = FLT_MAX;
@@ -128,7 +128,7 @@ float RayIntersectBox(
       if(t_xMin < Result)
       {
         Result = t_xMin;
-        (*HitNormal) = {-1, 0, 0};
+        (*HitNormal) = V3(-1, 0, 0);
       }
     }
   }
@@ -143,7 +143,7 @@ float RayIntersectBox(
       if(t_xMax < Result)
       {
         Result = t_xMax;
-        (*HitNormal) = {1, 0, 0};
+        (*HitNormal) = V3(1, 0, 0);
       }
     }
   }
@@ -153,12 +153,12 @@ float RayIntersectBox(
     x = RayOrigin.x + (RayDirection.x * t_yMin);
     z = RayOrigin.z + (RayDirection.z * t_yMin);
 
-    if((x <= xMax) && (x >= xMin) && (z <= zMax) && (z >= zMin))  
+    if((x <= xMax) && (x >= xMin) && (z <= zMax) && (z >= zMin))
     {
       if(t_yMin < Result)
       {
         Result = t_yMin;
-        (*HitNormal) = {0, -1, 0};  
+        (*HitNormal) = V3(0, -1, 0);
       }
     }
   }
@@ -173,7 +173,7 @@ float RayIntersectBox(
       if(t_yMax < Result)
       {
         Result = t_yMax;
-        (*HitNormal) = {0, 1, 0};
+        (*HitNormal) = V3(0, 1, 0);
       }
     }
   }
@@ -188,7 +188,7 @@ float RayIntersectBox(
       if(t_zMin < Result)
       {
         Result = t_zMin;
-        (*HitNormal) = {0, 0, -1};
+        (*HitNormal) = V3(0, 0, -1);
       }
     }
   }
@@ -198,12 +198,12 @@ float RayIntersectBox(
     y = RayOrigin.y + (RayDirection.y * t_zMax);
     x = RayOrigin.x + (RayDirection.x * t_zMax);
 
-    if((x <= xMax) && (x >= xMin) && (y <= yMax) && (y >= yMin))      
+    if((x <= xMax) && (x >= xMin) && (y <= yMax) && (y >= yMin))
     {
       if(t_zMax < Result)
       {
         Result = t_zMax;
-        (*HitNormal) = {0, 0, 1};
+        (*HitNormal) = V3(0, 0, 1);
       }
     }
   }
@@ -214,7 +214,7 @@ float RayIntersectBox(
 // ----------------------------------------------------------------------------
 v3 RayCast(world* World, v3 RayOrigin, v3 RayDirection)
 {
-  v3 Result = {}; 
+  v3 Result = {};
   v3 Attenuation = V3(1, 1, 1);
 
   uint32_t BounceCountMax = 8;
@@ -243,9 +243,9 @@ v3 RayCast(world* World, v3 RayOrigin, v3 RayDirection)
         HitMatIndex = Plane.MatIndex;
 
         NextOrigin = RayOrigin + (t * RayDirection);
-        NextNormal = Plane.N; 
+        NextNormal = Plane.N;
       }
-    }  
+    }
 
     // Check spheres
     for(uint32_t i=0;i<(World->SphereCount);i++)
@@ -304,7 +304,7 @@ v3 RayCast(world* World, v3 RayOrigin, v3 RayDirection)
 
       RayOrigin = NextOrigin;
 
-      v3 PureBounce = 
+      v3 PureBounce =
         RayDirection - (2.0f * Inner(RayDirection, NextNormal) * NextNormal);
 
       v3 RandomBounce = Normalize(
@@ -328,7 +328,7 @@ v3 RayCast(world* World, v3 RayOrigin, v3 RayDirection)
 // ----------------------------------------------------------------------------
 int main(int argc, char const *argv[])
 {
-  static float img[IMAGE_SIZE]; 
+  static float img[IMAGE_SIZE];
 
   printf("Program init\n");
 
@@ -338,7 +338,7 @@ int main(int argc, char const *argv[])
   Materials[1].RefColor = V3(0.3,0.3,0.3);
   Materials[1].Scatter = 0.0f;
   Materials[2].RefColor = V3(0.7,0.5,0.3);
-  Materials[2].Scatter = 0.91; 
+  Materials[2].Scatter = 0.91;
   Materials[3].RefColor = V3(0.3,0.2,0.2);
   Materials[3].Scatter = 0.92;
   Materials[4].RefColor = V3(0.2,0.8,0.2);
@@ -393,7 +393,7 @@ int main(int argc, char const *argv[])
   world World = {};
   World.MaterialCount = 9;
   World.Materials = Materials;
-  World.PlaneCount = 1; 
+  World.PlaneCount = 1;
   World.Planes = &Plane;
   World.SphereCount = 5;
   World.Spheres = Spheres;
@@ -425,20 +425,20 @@ int main(int argc, char const *argv[])
   // ...
   float HalfPixW = 0.5f / (float)IMAGE_WIDTH;
   float HalfPixH = 0.5f / (float)IMAGE_HEIGHT;
-  
+
   // ...
   float FilmDist = 1.0f;
   v3 FilmCenter = CameraP - (FilmDist * CameraZ);
 
-  // How many rays per pixel? 
+  // How many rays per pixel?
   uint32_t RaysPerPixels = 128;
   float Contrib = 1.0f / (float)RaysPerPixels;
 
   // Image generation loop
   for(uint32_t y=0;y<IMAGE_HEIGHT;y++)
   {
-    // Progress indicator 
-    printf("\rCompleted ratio: %3.1f / 100.0", 
+    // Progress indicator
+    printf("\rCompleted ratio: %3.1f / 100.0",
       (float)(100 * y) / (float)IMAGE_HEIGHT
     );
     fflush(stdout);
@@ -448,7 +448,7 @@ int main(int argc, char const *argv[])
 
     // ...
     for(uint32_t x=0;x<IMAGE_WIDTH;x++)
-    {      
+    {
       float FilmX = -1.0f + (2.0f * ((float)x / (float)IMAGE_WIDTH));
 
       v3 Color = {};
@@ -531,10 +531,10 @@ float ExactLinearTosRGB(float L)
   float S;
   if(L < 0.0031308f)
   {
-    S = L * 12.92f; 
+    S = L * 12.92f;
   }
   else
-  { 
+  {
     S = (1.055f * pow(L, 1.0f/2.4f)) - 0.055f;
   }
   return S;
