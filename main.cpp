@@ -2,11 +2,14 @@
 // 
 // Simple (?) raycaster written by watching 'Handmade Hero' Raycaster series
 // and manually copying the code pieces from video by hand. Not an exact copy
-// but the main algorithm is based on the video version.
+// but the core algorithm is based on the video version.
 // 
 // More of an 'active learning' example.
 // 
-// TODO: Try to add a Cube object into raycaster engine ...
+// Improvements (?)
+// ----------------
+// * 'RayIntersectBox' method added to original core code. It is probably
+// not the most efficient way but it _seems_ like working.
 // 
 // ----------------------------------------------------------------------------
 // Original source is: https://hero.handmade.network/episode/ray/
@@ -89,6 +92,126 @@ float RayIntersectSphere(
 }
 
 // ----------------------------------------------------------------------------
+float RayIntersectBox(
+  v3 RayOrigin, v3 RayDirection, box* Box, v3* HitNormal 
+)
+{
+  float Result = FLT_MAX;
+
+  float xMin = Box->P0.x;
+  float xMax = Box->P1.x;
+  float yMin = Box->P0.y;
+  float yMax = Box->P1.y;
+  float zMin = Box->P0.z;
+  float zMax = Box->P1.z;
+
+  // Inverse distance calculation
+  float t_xMin = (xMin - RayOrigin.x) / RayDirection.x;
+  float t_xMax = (xMax - RayOrigin.x) / RayDirection.x;
+  float t_yMin = (yMin - RayOrigin.y) / RayDirection.y;
+  float t_yMax = (yMax - RayOrigin.y) / RayDirection.y;
+  float t_zMin = (zMin - RayOrigin.z) / RayDirection.z;
+  float t_zMax = (zMax - RayOrigin.z) / RayDirection.z;
+
+  // Probable x,y,z hit locations
+  float x;
+  float y;
+  float z;
+
+  if(t_xMin > 0)
+  {
+    y = RayOrigin.y + (RayDirection.y * t_xMin);
+    z = RayOrigin.z + (RayDirection.z * t_xMin);
+
+    if((y <= yMax) && (y >= yMin) && (z <= zMax) && (z >= zMin))
+    {
+      if(t_xMin < Result)
+      {
+        Result = t_xMin;
+        (*HitNormal) = {-1, 0, 0};
+      }
+    }
+  }
+
+  if(t_xMax > 0)
+  {
+    y = RayOrigin.y + (RayDirection.y * t_xMax);
+    z = RayOrigin.z + (RayDirection.z * t_xMax);
+
+    if((y <= yMax) && (y >= yMin) && (z <= zMax) && (z >= zMin))
+    {
+      if(t_xMax < Result)
+      {
+        Result = t_xMax;
+        (*HitNormal) = {1, 0, 0};
+      }
+    }
+  }
+
+  if(t_yMin > 0)
+  {
+    x = RayOrigin.x + (RayDirection.x * t_yMin);
+    z = RayOrigin.z + (RayDirection.z * t_yMin);
+
+    if((x <= xMax) && (x >= xMin) && (z <= zMax) && (z >= zMin))  
+    {
+      if(t_yMin < Result)
+      {
+        Result = t_yMin;
+        (*HitNormal) = {0, -1, 0};  
+      }
+    }
+  }
+
+  if(t_yMax > 0)
+  {
+    x = RayOrigin.x + (RayDirection.x * t_yMax);
+    z = RayOrigin.z + (RayDirection.z * t_yMax);
+
+    if((x <= xMax) && (x >= xMin) && (z <= zMax) && (z >= zMin))
+    {
+      if(t_yMax < Result)
+      {
+        Result = t_yMax;
+        (*HitNormal) = {0, 1, 0};
+      }
+    }
+  }
+
+  if(t_zMin > 0)
+  {
+    y = RayOrigin.y + (RayDirection.y * t_zMin);
+    x = RayOrigin.x + (RayDirection.x * t_zMin);
+
+    if((x <= xMax) && (x >= xMin) && (y <= yMax) && (y >= yMin))
+    {
+      if(t_zMin < Result)
+      {
+        Result = t_zMin;
+        (*HitNormal) = {0, 0, -1};
+      }
+    }
+  }
+
+  if(t_zMax > 0)
+  {
+    y = RayOrigin.y + (RayDirection.y * t_zMax);
+    x = RayOrigin.x + (RayDirection.x * t_zMax);
+
+    if((x <= xMax) && (x >= xMin) && (y <= yMax) && (y >= yMin))      
+    {
+      if(t_zMax < Result)
+      {
+        Result = t_zMax;
+        (*HitNormal) = {0, 0, 1};
+      }
+    }
+  }
+
+  return Result;
+}
+
+// ----------------------------------------------------------------------------
 v3 RayCast(world* World, v3 RayOrigin, v3 RayDirection)
 {
   v3 Result = {}; 
@@ -143,6 +266,26 @@ v3 RayCast(world* World, v3 RayOrigin, v3 RayDirection)
       }
     }
 
+    // Check boxes
+    for(uint32_t i=0;i<(World->BoxCount);i++)
+    {
+      v3 HitNormalMaybe = {};
+      box Box = World->Boxes[i];
+
+      float t = RayIntersectBox(
+        RayOrigin, RayDirection, &Box, &HitNormalMaybe
+      );
+
+      if((t > MinHitDistance) && (t < HitDistance))
+      {
+        HitDistance = t;
+        HitMatIndex = Box.MatIndex;
+
+        NextOrigin = RayOrigin + (t * RayDirection);
+        NextNormal = HitNormalMaybe;
+      }
+    }
+
     // Process the hit
     if(HitMatIndex)
     {
@@ -190,51 +333,75 @@ int main(int argc, char const *argv[])
   printf("Program init\n");
 
   // Colors etc. for world elements
-  static material Materials[6];
+  static material Materials[9];
   Materials[0].EmitColor = V3(0.3,0.4,0.5);
   Materials[1].RefColor = V3(0.3,0.3,0.3);
   Materials[1].Scatter = 0.0f;
   Materials[2].RefColor = V3(0.7,0.5,0.3);
-  Materials[2].Scatter = 0.9f;
+  Materials[2].Scatter = 0.91; 
   Materials[3].RefColor = V3(0.3,0.2,0.2);
-  Materials[3].Scatter = 0.9f;
+  Materials[3].Scatter = 0.92;
   Materials[4].RefColor = V3(0.2,0.8,0.2);
-  Materials[4].Scatter = 0.5f;
+  Materials[4].Scatter = 0.93;
   Materials[5].RefColor = V3(0.4,0.5,0.8);
-  Materials[5].Scatter = 0.99;
+  Materials[5].Scatter = 0.94;
+  Materials[6].RefColor = V3(0.9,0.5,0.5);
+  Materials[6].Scatter = 0.95;
+  Materials[7].RefColor = V3(0.3,0.7,0.8);
+  Materials[7].Scatter = 0.96;
+  Materials[8].RefColor = V3(0.8,0.6,0.5);
+  Materials[8].EmitColor = V3(0.1,0.1,0.1);
+  Materials[8].Scatter = 0.97;
 
   // We have only one plane
   plane Plane = {};
   Plane.N = Normalize(V3(0,0,1));
-  Plane.d = 0;
+  Plane.d = 0.5;
   Plane.MatIndex = 1;
 
   // Multiple spheres ...
-  sphere Spheres[4];
-  Spheres[0].P = V3(3, 01, 0);
-  Spheres[0].r = 1.0f;
+  sphere Spheres[5];
+  Spheres[0].P = V3(1, -5, -0.2);
+  Spheres[0].r = 2.0f;
   Spheres[0].MatIndex = 2;
-  Spheres[1].P = V3(-10, 10, 5);
-  Spheres[1].r = 3.0f;
+  Spheres[1].P = V3(-20, 8, 1.1);
+  Spheres[1].r = 4.0f;
   Spheres[1].MatIndex = 3;
-  Spheres[2].P = V3(5, 0, 3);
-  Spheres[2].r = 1.0f;
+  Spheres[2].P = V3(7.0, -1, 2.0);
+  Spheres[2].r = 1.0;
   Spheres[2].MatIndex = 4;
   Spheres[3].P = V3(0, 30, 4);
   Spheres[3].r = 10;
   Spheres[3].MatIndex = 5;
+  Spheres[4].P = V3(-4, 10, 3.5);
+  Spheres[4].r = 1.0;
+  Spheres[4].MatIndex = 4;
+
+  // Lets put some 'Axis Aligned' boxes
+  box Boxes[3];
+  Boxes[0].P0 = V3(-2.5, 5, 0.2);
+  Boxes[0].P1 = Boxes[0].P0 + V3(2,2,2);
+  Boxes[0].MatIndex = 5;
+  Boxes[1].P0 = V3(5, 10, 0.5);
+  Boxes[1].P1 = Boxes[1].P0 + V3(3,3,3);
+  Boxes[1].MatIndex = 6;
+  Boxes[2].P0 = V3(-30, 30, 0.5);
+  Boxes[2].P1 = Boxes[2].P0 + V3(8,8,8);
+  Boxes[2].MatIndex = 8;
 
   // Pack everything into the world struct
   world World = {};
-  World.MaterialCount = 6;
+  World.MaterialCount = 9;
   World.Materials = Materials;
   World.PlaneCount = 1; 
   World.Planes = &Plane;
-  World.SphereCount = 4;
+  World.SphereCount = 5;
   World.Spheres = Spheres;
+  World.BoxCount = 3;
+  World.Boxes = Boxes;
 
   // Calculate camera position and direction vectors
-  v3 CameraP = V3(0,-10,1);
+  v3 CameraP = V3(9,-20,6);
   v3 CameraZ = Normalize(CameraP);
   v3 CameraX = Normalize(Cross(V3(0,0,1), CameraZ));
   v3 CameraY = Normalize(Cross(CameraZ, CameraX));
@@ -264,12 +431,19 @@ int main(int argc, char const *argv[])
   v3 FilmCenter = CameraP - (FilmDist * CameraZ);
 
   // How many rays per pixel? 
-  uint32_t RaysPerPixels = 128; 
+  uint32_t RaysPerPixels = 128;
   float Contrib = 1.0f / (float)RaysPerPixels;
 
   // Image generation loop
   for(uint32_t y=0;y<IMAGE_HEIGHT;y++)
   {
+    // Progress indicator 
+    printf("\rCompleted ratio: %3.1f / 100.0", 
+      (float)(100 * y) / (float)IMAGE_HEIGHT
+    );
+    fflush(stdout);
+
+    // ...
     float FilmY = -1.0f + (2.0f * ((float)y / (float)IMAGE_HEIGHT));
 
     // ...
@@ -306,7 +480,7 @@ int main(int argc, char const *argv[])
   }
 
   ImgWrite(img);
-  printf("Exit\n");
+  printf("\nExit\n");
   return 0;
 }
 

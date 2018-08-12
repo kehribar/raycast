@@ -25,6 +25,13 @@ typedef struct{
 
 // ----------------------------------------------------------------------------
 typedef struct{
+  v3 P0;
+  v3 P1;
+  uint32_t MatIndex;
+}box; // AABB: 'Axis Aligned Boundary Box'
+
+// ----------------------------------------------------------------------------
+typedef struct{
   v3 N;
   float d;
   uint32_t MatIndex;  
@@ -40,6 +47,9 @@ typedef struct{
 
   uint32_t SphereCount;
   sphere* Spheres;
+
+  uint32_t BoxCount;
+  box* Boxes;
 }world;
 
 // ----------------------------------------------------------------------------
